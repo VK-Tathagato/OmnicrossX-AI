@@ -170,7 +170,7 @@ export default function ResearchPage() {
           <motion.a 
             href="/" 
             className="group" 
-            style={{ display: "flex", alignItems: "center", gap: "0.6rem", textDecoration: "none" }}
+            style={{ display: "flex", alignItems: "center", gap: "1rem", textDecoration: "none" }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
