@@ -17,7 +17,7 @@ export default function ResearchLayout({
     const handleBeforeUnload = () => {
       // If the user is anonymous, clean up their temporary session on tab close
       if (!userId && sessionId) {
-        fetch(`http://localhost:8000/api/research/${sessionId}`, {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/research/${sessionId}`, {
           method: "DELETE",
           keepalive: true,
         }).catch(() => {});
