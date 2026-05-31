@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast, Toaster } from "react-hot-toast";
 import {
   FileText, Layers, Brain, CheckCircle, AlertCircle,
   ArrowLeft, RefreshCw, Search, Cpu, Sparkles, Send
@@ -54,7 +55,11 @@ export default function ResearchPage() {
         setStatus(s); // Wait until solutions are fetched before showing the complete screen
       } else if (s.status === "failed") {
         setPollingActive(false);
-        setError("Research pipeline failed. Please try again.");
+        const errorMsg = s.current_step === "No papers found" 
+          ? "No relevant papers found for this query." 
+          : "Pipeline failed: You may have run out of API tokens for the day. Please try again tomorrow.";
+        setError(errorMsg);
+        toast.error(errorMsg, { duration: 6000 });
         setStatus(s);
       } else {
         setStatus(s);
@@ -119,6 +124,7 @@ export default function ResearchPage() {
 
   return (
     <div className="page-wrapper" style={{ minHeight: "100vh" }}>
+      <Toaster position="bottom-center" toastOptions={{ style: { background: '#1e1e2d', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} />
 
       {/* ── Ambient Glow ── */}
       <div className="bg-orbs">
