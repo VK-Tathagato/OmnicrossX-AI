@@ -54,7 +54,7 @@ class PDFParser:
 
         for page_num in range(len(doc)):
             page = doc[page_num]
-            blocks = page.get_text("blocks", sort=True)  # type: ignore
+            blocks = page.get_text("blocks")  # type: ignore
 
             for block in blocks:
                 if block[6] != 0:  # Skip image blocks
@@ -64,7 +64,7 @@ class PDFParser:
                     continue
 
                 # Detect references section start
-                if re.match(r"^(References|Bibliography|Works Cited)\s*$", text, re.IGNORECASE):
+                if page_num >= len(doc) * 0.5 and re.match(r"^(References|Bibliography|Works Cited)\s*$", text, re.IGNORECASE):
                     in_references = True
                     if current_section:
                         sections.append(current_section)
@@ -123,6 +123,9 @@ class PDFParser:
             return True
         # All caps short title
         if text.isupper() and len(text) > 3:
+            return True
+        # Title case short title
+        if text.istitle() and len(text.split()) <= 4:
             return True
         return False
 

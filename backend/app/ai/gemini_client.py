@@ -1,7 +1,8 @@
 """
 Gemini Client — Query expansion, solution generation, and chat.
 """
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import asyncio
 import json
 import logging
@@ -37,20 +38,8 @@ Strict behavioral rules you MUST follow at all times:
 
 class GeminiClient:
     def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
         self.model_name = model
-        # system_instruction establishes behavioral guardrails so the model
-        # cannot be hijacked by prompt-injection payloads embedded in user
-        # queries or third-party paper content (CWE-693 / OWASP LLM01).
-        self.model = genai.GenerativeModel(
-            model,
-            system_instruction=SYSTEM_INSTRUCTION,
-        )
-        self.generation_config = genai.types.GenerationConfig(
-            temperature=0.7,
-            top_p=0.95,
-            max_output_tokens=8192,
-        )
 
     @retry(stop=stop_after_attempt(5), wait=wait_exponential(min=4, max=60))
     async def expand_query(self, user_query: str) -> List[str]:
@@ -58,10 +47,11 @@ class GeminiClient:
         from app.ai.prompts import QUERY_EXPANSION_PROMPT
         prompt = QUERY_EXPANSION_PROMPT.format(query=user_query)
 
-        response = await asyncio.to_thread(
-            self.model.generate_content,
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        response = await self.client.aio.models.generate_content(
+            model=self.model_name,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION,
                 temperature=0.5,
                 max_output_tokens=1024,
             ),
@@ -91,10 +81,15 @@ class GeminiClient:
             num_solutions=num_solutions,
         )
 
-        response = await asyncio.to_thread(
-            self.model.generate_content,
-            prompt,
-            generation_config=self.generation_config,
+        response = await self.client.aio.models.generate_content(
+            model=self.model_name,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION,
+                temperature=0.7,
+                top_p=0.95,
+                max_output_tokens=8192,
+            ),
         )
         raw = response.text.strip()
         solutions = self._parse_solutions(raw)
@@ -124,10 +119,11 @@ class GeminiClient:
             user_message=user_message,
         )
 
-        response = await asyncio.to_thread(
-            self.model.generate_content,
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        response = await self.client.aio.models.generate_content(
+            model=self.model_name,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION,
                 temperature=0.6,
                 max_output_tokens=2048,
             ),

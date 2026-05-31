@@ -1,10 +1,10 @@
-﻿fastapi
+fastapi
 uvicorn[standard]
 python-dotenv
 pydantic
 pydantic-settings
 supabase
-google-generativeai
+google-genai
 arxiv
 PyMuPDF
 httpx

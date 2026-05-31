@@ -148,6 +148,14 @@ class RAGPipeline:
         stored = await self.vector_store.store_embeddings(chunks_with_embeddings)
         await progress(f"Stored {stored} embeddings in vector database", 70)
 
+        # Mark papers as processed now that their chunks are safely stored
+        processed_paper_ids = list(set([c["paper_id"] for c in chunks_with_embeddings if c.get("paper_id")]))
+        if processed_paper_ids:
+            try:
+                await self.supabase.table("papers").update({"is_processed": True}).in_("id", processed_paper_ids).execute()
+            except Exception as e:
+                logger.error(f"Failed to mark papers as processed: {e}")
+
         # ── 7. Retrieve most relevant chunks ──────────────────────────────────
         await progress("Retrieving relevant paper sections", 75)
         query_embedding = await self.embedder.embed_query(user_query)
@@ -228,7 +236,6 @@ class RAGPipeline:
             if paper_id:
                 await self.supabase.table("papers").update({
                     "extracted_text": full_text[:50000],  # Cap for storage
-                    "is_processed": True,
                 }).eq("id", paper_id).execute()
 
             # Chunk

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Dependency injection â€” Supabase client, services, pipeline singletons.
 """
 from functools import lru_cache
@@ -13,6 +13,22 @@ from app.embeddings.embedding_service import EmbeddingService
 from app.embeddings.vector_store import VectorStore
 from app.ai.gemini_client import GeminiClient
 from app.ai.rag_pipeline import RAGPipeline
+
+# --- Supabase SDK Monkey-Patch ---
+# The supabase-py SDK (<=2.4.6) strictly validates API keys as JWTs.
+# Newer Supabase projects use opaque keys starting with "sb_...".
+# This patch bypasses the JWT regex validation so the new keys work.
+import supabase._async.client
+import re
+original_re_match = supabase._async.client.re.match
+
+def patched_re_match(pattern, string, flags=0):
+    if "A-Za-z0-9-_=" in str(pattern):
+        return True  # Bypass JWT check for new opaque keys
+    return original_re_match(pattern, string, flags)
+
+supabase._async.client.re.match = patched_re_match
+# ---------------------------------
 
 
 # â”€â”€â”€ Singleton factories (cached per process) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
