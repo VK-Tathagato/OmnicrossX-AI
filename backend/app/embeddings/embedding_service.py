@@ -55,54 +55,54 @@ class EmbeddingService:
             raise
 
     async def embed_batch(
-        self, texts: List[str], batch_size: int = 100
+        self, texts: List[str], batch_size: int = 100, max_concurrency: int = 5
     ) -> List[Optional[List[float]]]:
-        """Embed a list of texts in batches to respect rate limits."""
-        embeddings = []
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i : i + batch_size]
-            try:
-                # Use a single API call for the entire batch
-                result = await asyncio.to_thread(
-                    genai.embed_content,
-                    model=self.model,
-                    content=batch,
-                    task_type="retrieval_document",
-                    output_dimensionality=self.dimension
-                )
-                
-                # If a single text was sent (batch_size=1), it returns a dict with 'embedding' as a flat list
-                # If multiple texts were sent, it returns a dict where 'embedding' is a list of lists
-                if isinstance(result["embedding"][0], list):
-                    embeddings.extend(result["embedding"])
-                else:
-                    embeddings.append(result["embedding"])
+        """Embed a list of texts concurrently in batches to improve speed."""
+        embeddings = [None] * len(texts)
+        sem = asyncio.Semaphore(max_concurrency)
+
+        async def _process_batch(start_idx: int, batch: List[str]):
+            async with sem:
+                try:
+                    result = await asyncio.to_thread(
+                        genai.embed_content,
+                        model=self.model,
+                        content=batch,
+                        task_type="retrieval_document",
+                        output_dimensionality=self.dimension
+                    )
                     
-            except Exception as e:
-                logger.error(f"Batch embedding error: {e}")
-                if "429" in str(e) or "exhausted" in str(e).lower() or "quota" in str(e).lower():
-                    # Wait and retry manually for rate limits
-                    logger.warning("Rate limit hit during embedding. Backing off for 15s...")
-                    await asyncio.sleep(15)
-                    try:
-                        result = await asyncio.to_thread(
-                            genai.embed_content,
-                            model=self.model,
-                            content=batch,
-                            task_type="retrieval_document",
-                            output_dimensionality=self.dimension
-                        )
-                        if isinstance(result["embedding"][0], list):
-                            embeddings.extend(result["embedding"])
-                        else:
-                            embeddings.append(result["embedding"])
-                        continue
-                    except Exception as retry_err:
-                        logger.error(f"Retry batch embedding failed: {retry_err}")
-                embeddings.extend([None] * len(batch))
-                
-            # Small delay between batches to avoid rate limits
-            if i + batch_size < len(texts):
-                await asyncio.sleep(1.0)
+                    if isinstance(result["embedding"][0], list):
+                        for j, emb in enumerate(result["embedding"]):
+                            embeddings[start_idx + j] = emb
+                    else:
+                        embeddings[start_idx] = result["embedding"]
+                        
+                except Exception as e:
+                    logger.error(f"Batch embedding error: {e}")
+                    if "429" in str(e) or "exhausted" in str(e).lower() or "quota" in str(e).lower():
+                        logger.warning("Rate limit hit during embedding. Backing off for 10s...")
+                        await asyncio.sleep(10)
+                        try:
+                            result = await asyncio.to_thread(
+                                genai.embed_content,
+                                model=self.model,
+                                content=batch,
+                                task_type="retrieval_document",
+                                output_dimensionality=self.dimension
+                            )
+                            if isinstance(result["embedding"][0], list):
+                                for j, emb in enumerate(result["embedding"]):
+                                    embeddings[start_idx + j] = emb
+                            else:
+                                embeddings[start_idx] = result["embedding"]
+                        except Exception as retry_err:
+                            logger.error(f"Retry batch embedding failed: {retry_err}")
+
+        tasks = [
+            _process_batch(i, texts[i : i + batch_size])
+            for i in range(0, len(texts), batch_size)
+        ]
+        await asyncio.gather(*tasks)
                 
         return embeddings

@@ -16,8 +16,8 @@ class ArxivService:
     def __init__(self):
         self.client = arxiv.Client(
             page_size=10,
-            delay_seconds=3.0,
-            num_retries=3,
+            delay_seconds=2.0,
+            num_retries=1,
         )
 
     async def search_papers(
@@ -81,11 +81,19 @@ class ArxivService:
 
         try:
             async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-                resp = await client.get(pdf_url, headers={"User-Agent": "OmniXAI/1.0"})
-                resp.raise_for_status()
-                dest_path.write_bytes(resp.content)
-                logger.info(f"Downloaded PDF: {arxiv_id} ({len(resp.content)} bytes)")
-                return str(dest_path)
+                for attempt in range(3):
+                    resp = await client.get(pdf_url, headers={"User-Agent": "OmnicrossX-AI/1.0 (mailto:admin@example.com)"})
+                    if resp.status_code == 200:
+                        dest_path.write_bytes(resp.content)
+                        logger.info(f"Downloaded PDF: {arxiv_id} ({len(resp.content)} bytes)")
+                        return str(dest_path)
+                    elif resp.status_code in [403, 429, 503]:
+                        logger.warning(f"ArXiv download rate limited (Status {resp.status_code}) on attempt {attempt+1}. Waiting...")
+                        await asyncio.sleep(3 * (attempt + 1))
+                    else:
+                        resp.raise_for_status()
+                logger.error(f"Failed to download PDF {arxiv_id} after retries.")
+                return None
         except Exception as e:
             logger.error(f"Failed to download PDF {arxiv_id}: {e}")
             return None

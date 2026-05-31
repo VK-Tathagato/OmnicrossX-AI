@@ -36,7 +36,7 @@ Strict behavioral rules you MUST follow at all times:
 
 
 class GeminiClient:
-    def __init__(self, api_key: str, model: str = "gemini-3.1-flash"):
+    def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
         genai.configure(api_key=api_key)
         self.model_name = model
         # system_instruction establishes behavioral guardrails so the model
@@ -72,7 +72,7 @@ class GeminiClient:
             # Fallback: use original query
             queries = [user_query]
         logger.info(f"Expanded query into {len(queries)} search terms")
-        return queries[:8]
+        return queries[:2]
 
     @retry(stop=stop_after_attempt(5), wait=wait_exponential(min=4, max=60))
     async def generate_solutions(
@@ -151,12 +151,13 @@ class GeminiClient:
     def _parse_json_array(self, text: str) -> List[str]:
         """Extract JSON array from Gemini response."""
         try:
-            # Try to find JSON array in the response
-            match = re.search(r"\[.*?\]", text, re.DOTALL)
-            if match:
-                return json.loads(match.group())
-        except Exception:
-            pass
+            start_idx = text.find('[')
+            end_idx = text.rfind(']')
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                return json.loads(text[start_idx:end_idx+1])
+        except Exception as e:
+            logger.warning(f"Failed to parse JSON array: {e}")
+            
         # Fallback: split on newlines
         lines = [l.strip().strip('"').strip("'").strip("-").strip() for l in text.splitlines()]
         return [l for l in lines if l and len(l) > 5]
@@ -164,14 +165,26 @@ class GeminiClient:
     def _parse_solutions(self, text: str) -> List[Dict[str, Any]]:
         """Parse structured solution JSON from Gemini response."""
         try:
+            logger.info(f"Raw solution text: {text[:500]}")
+            
+            # Remove scratchpad if present
+            scratchpad_end = text.find('</scratchpad>')
+            if scratchpad_end != -1:
+                text = text[scratchpad_end + 13:]
+
             # Look for JSON block
             match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
             if match:
                 return json.loads(match.group(1))
-            # Try bare JSON
-            match = re.search(r"\[[\s\S]*\]", text)
-            if match:
-                return json.loads(match.group())
+            
+            # Try finding the outermost array brackets
+            start_idx = text.find('[')
+            end_idx = text.rfind(']')
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                return json.loads(text[start_idx:end_idx+1])
+            
+            # Try parsing the whole text
+            return json.loads(text)
         except Exception as e:
-            logger.error(f"Failed to parse solutions JSON: {e}")
+            logger.error(f"Failed to parse solutions JSON: {e}\nRaw output: {text[:200]}...")
         return []

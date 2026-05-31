@@ -38,9 +38,10 @@ CRITICAL RULES:
 4. Be honest about limitations and unknowns — do not fabricate data
 5. Each solution must be meaningfully different from others
 6. Assign realistic scores (0.0 to 1.0) based on evidence strength
+7. MUST return valid, strictly formatted JSON array at the end, enclosed in a ```json ... ``` markdown block.
 
-Return a valid JSON array in EXACTLY this format:
-```json
+Before outputting the JSON array, you MUST write a brief `<scratchpad>` where you analyze the problem, synthesize evidence, and brainstorm combinations.
+After your `<scratchpad>`, return a valid JSON array in EXACTLY this format:
 [
   {{
     "title": "Brief descriptive solution title",
@@ -66,7 +67,6 @@ Return a valid JSON array in EXACTLY this format:
     "source_excerpt_indices": [1, 3, 5]
   }}
 ]
-```
 
 Generate the {num_solutions} solutions now:"""
 

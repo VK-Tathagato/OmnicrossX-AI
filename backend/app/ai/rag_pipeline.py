@@ -101,7 +101,8 @@ class RAGPipeline:
         await progress(f"Found {len(papers_meta)} relevant papers", 25)
 
         # ── 4. Store papers + link to session ─────────────────────────────────
-        paper_ids = await self._store_papers(session_id, papers_meta)
+        paper_info = await self._store_papers(session_id, papers_meta)
+        paper_ids = {arxiv_id: info["id"] for arxiv_id, info in paper_info.items()}
         await self._update_session(session_id, {"papers_found": len(paper_ids)})
 
         # ── 5. Download + Process PDFs ────────────────────────────────────────
@@ -109,12 +110,22 @@ class RAGPipeline:
         all_chunks: List[Dict[str, Any]] = []
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            tasks = [
-                self._process_paper(paper_meta, paper_ids.get(paper_meta["arxiv_id"]), tmpdir)
-                for paper_meta in papers_meta
-                if paper_ids.get(paper_meta["arxiv_id"])
-            ]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+            tasks = []
+            for paper_meta in papers_meta:
+                arxiv_id = paper_meta["arxiv_id"]
+                info = paper_info.get(arxiv_id)
+                if info and not info.get("is_processed", False):
+                    tasks.append(self._process_paper(paper_meta, info["id"], tmpdir))
+                elif info and info.get("is_processed", False):
+                    logger.info(f"Skipping download for {arxiv_id}, already processed.")
+            
+            # Concurrency limit (Semaphore)
+            sem = asyncio.Semaphore(3)
+            async def bounded_process(task):
+                async with sem:
+                    return await task
+            
+            results = await asyncio.gather(*(bounded_process(t) for t in tasks), return_exceptions=True)
 
         for r in results:
             if isinstance(r, list):
@@ -146,8 +157,13 @@ class RAGPipeline:
             paper_ids=list(paper_ids.values()),
         )
 
+        if not relevant_chunks:
+            await self._update_session(session_id, {"status": "failed", "current_step": "Failed to extract text from papers"})
+            raise RuntimeError("No relevant text chunks could be extracted from the papers.")
+
         # Enrich chunks with paper metadata
         relevant_chunks = await self._enrich_chunks(relevant_chunks, papers_meta)
+
 
         # ── 8. Generate solutions with Gemini ─────────────────────────────────
         await progress("Synthesizing solutions with AI reasoning", 85)
@@ -230,9 +246,9 @@ class RAGPipeline:
 
     async def _store_papers(
         self, session_id: str, papers: List[Dict]
-    ) -> Dict[str, str]:
-        """Upsert papers and link to session. Returns {arxiv_id: paper_id}."""
-        id_map: Dict[str, str] = {}
+    ) -> Dict[str, Dict[str, Any]]:
+        """Upsert papers and link to session. Returns {arxiv_id: {'id': paper_id, 'is_processed': bool}}."""
+        id_map: Dict[str, Dict[str, Any]] = {}
 
         for p in papers:
             try:
@@ -252,7 +268,8 @@ class RAGPipeline:
 
                 if result.data:
                     paper_id = result.data[0]["id"]
-                    id_map[p["arxiv_id"]] = paper_id
+                    is_processed = result.data[0].get("is_processed", False)
+                    id_map[p["arxiv_id"]] = {"id": paper_id, "is_processed": is_processed}
 
                     # Link to session
                     await self.supabase.table("session_papers").upsert(
