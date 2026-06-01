@@ -55,9 +55,14 @@ export default function ResearchPage() {
         setStatus(s); // Wait until solutions are fetched before showing the complete screen
       } else if (s.status === "failed") {
         setPollingActive(false);
-        const errorMsg = s.current_step === "No papers found" 
-          ? "No relevant papers found for this query." 
-          : "Pipeline failed: You may have run out of API tokens for the day. Please try again tomorrow.";
+        const isRateLimit = s.current_step && (s.current_step.toLowerCase().includes("rate limit") || s.current_step.toLowerCase().includes("exhausted") || s.current_step.toLowerCase().includes("quota"));
+        const errorMsg = s.current_step && s.current_step.includes("No papers found")
+          ? "No relevant papers found for this query. Try a different topic or rephrasing." 
+          : isRateLimit 
+            ? "Pipeline failed: You may have run out of API tokens for the day. Please try again tomorrow." 
+            : s.current_step && s.current_step.startsWith("Error:") 
+              ? `Pipeline failed: ${s.current_step.replace('Error: ', '')}` 
+              : `Pipeline failed: ${s.current_step || "An unexpected error occurred."}`;
         setError(errorMsg);
         toast.error(errorMsg, { duration: 6000 });
         setStatus(s);

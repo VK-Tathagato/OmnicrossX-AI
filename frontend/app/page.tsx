@@ -508,89 +508,6 @@ export default function HomePage() {
           className="search-wrapper"
         >
           <div className={`search-box${error ? " has-error" : ""}`}>
-            <div 
-              ref={modeDropdownRef}
-              style={{ position: "absolute", left: "0.8rem", top: "1rem", zIndex: 10 }}
-            >
-              <button
-                onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  background: isManualMode ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.05)",
-                  color: isManualMode ? "#fca5a5" : "rgba(255,255,255,0.7)",
-                  border: isManualMode ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "8px",
-                  padding: "0.4rem 0.75rem",
-                  fontSize: "0.8rem",
-                  cursor: "pointer",
-                  transition: "all 0.2s"
-                }}
-              >
-                {isManualMode ? "Manual" : "Auto"}
-                <ChevronDown size={14} style={{ opacity: 0.5, transform: isModeDropdownOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
-              </button>
-              
-              <AnimatePresence>
-                {isModeDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.15 }}
-                    style={{
-                      position: "absolute",
-                      top: "calc(100% + 0.5rem)",
-                      left: 0,
-                      width: "140px",
-                      background: "rgba(13, 15, 26, 0.95)",
-                      backdropFilter: "blur(12px)",
-                      border: "1px solid rgba(239, 68, 68, 0.2)",
-                      borderRadius: "8px",
-                      padding: "0.4rem",
-                      boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-                    }}
-                  >
-                    <button
-                      onClick={() => { setIsManualMode(false); setIsModeDropdownOpen(false); }}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        textAlign: "left",
-                        padding: "0.5rem 0.75rem",
-                        fontSize: "0.8rem",
-                        color: !isManualMode ? "#fca5a5" : "rgba(255,255,255,0.7)",
-                        background: !isManualMode ? "rgba(239,68,68,0.1)" : "transparent",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        border: "none",
-                        marginBottom: "0.2rem"
-                      }}
-                    >
-                      Auto Search
-                    </button>
-                    <button
-                      onClick={() => { setIsManualMode(true); setIsModeDropdownOpen(false); }}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        textAlign: "left",
-                        padding: "0.5rem 0.75rem",
-                        fontSize: "0.8rem",
-                        color: isManualMode ? "#fca5a5" : "rgba(255,255,255,0.7)",
-                        background: isManualMode ? "rgba(239,68,68,0.1)" : "transparent",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        border: "none"
-                      }}
-                    >
-                      Manual Papers
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
 
             <textarea
               ref={inputRef}
@@ -601,7 +518,6 @@ export default function HomePage() {
               placeholder=""
               rows={3}
               className="search-textarea"
-              style={{ paddingLeft: "7.5rem" }}
             />
 
             {isManualMode && (
@@ -621,7 +537,7 @@ export default function HomePage() {
 
             {/* Animated placeholder */}
             {!query && (
-              <div className="search-animated-placeholder" style={{ left: "7.5rem" }}>
+              <div className="search-animated-placeholder">
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={placeholderIdx}
@@ -638,9 +554,94 @@ export default function HomePage() {
 
             {/* Footer row */}
             <div className="search-footer">
-              <span className="search-hint">
-                Press Enter to research · Shift+Enter for new line
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div 
+                  ref={modeDropdownRef}
+                  style={{ position: "relative", zIndex: 10 }}
+                >
+                  <button
+                    onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                      background: isManualMode ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.05)",
+                      color: isManualMode ? "#fca5a5" : "rgba(255,255,255,0.7)",
+                      border: isManualMode ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "8px",
+                      padding: "0.4rem 0.75rem",
+                      fontSize: "0.8rem",
+                      cursor: "pointer",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {isManualMode ? "Manual" : "Auto"}
+                    <ChevronDown size={14} style={{ opacity: 0.5, transform: isModeDropdownOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {isModeDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        transition={{ duration: 0.15 }}
+                        style={{
+                          position: "absolute",
+                          bottom: "calc(100% + 0.5rem)",
+                          left: 0,
+                          width: "140px",
+                          background: "rgba(13, 15, 26, 0.95)",
+                          backdropFilter: "blur(12px)",
+                          border: "1px solid rgba(239, 68, 68, 0.2)",
+                          borderRadius: "8px",
+                          padding: "0.4rem",
+                          boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        <button
+                          onClick={() => { setIsManualMode(false); setIsModeDropdownOpen(false); }}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "0.5rem 0.75rem",
+                            fontSize: "0.8rem",
+                            color: !isManualMode ? "#fca5a5" : "rgba(255,255,255,0.7)",
+                            background: !isManualMode ? "rgba(239,68,68,0.1)" : "transparent",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            border: "none",
+                            marginBottom: "0.2rem"
+                          }}
+                        >
+                          Auto Search
+                        </button>
+                        <button
+                          onClick={() => { setIsManualMode(true); setIsModeDropdownOpen(false); }}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "0.5rem 0.75rem",
+                            fontSize: "0.8rem",
+                            color: isManualMode ? "#fca5a5" : "rgba(255,255,255,0.7)",
+                            background: isManualMode ? "rgba(239,68,68,0.1)" : "transparent",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            border: "none"
+                          }}
+                        >
+                          Manual Papers
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <span className="search-hint">
+                  Press Enter to research · Shift+Enter for new line
+                </span>
+              </div>
               <button
                 id="research-submit-btn"
                 onClick={() => handleSubmit(query)}

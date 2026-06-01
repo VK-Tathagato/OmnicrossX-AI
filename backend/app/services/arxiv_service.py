@@ -8,6 +8,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 import re
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,8 @@ class ArxivService:
     def __init__(self):
         self.client = arxiv.Client(
             page_size=10,
-            delay_seconds=2.0,
-            num_retries=1,
+            delay_seconds=3.0,
+            num_retries=5,
         )
 
     async def search_papers(
@@ -29,6 +30,7 @@ class ArxivService:
         """Search arXiv for papers matching multiple queries. Returns deduplicated results."""
         seen_ids: set = set()
         all_papers: List[Dict[str, Any]] = []
+        last_error = None
 
         for query in queries:
             try:
@@ -41,10 +43,15 @@ class ArxivService:
                         all_papers.append(p)
             except Exception as e:
                 logger.error(f"arXiv search error for query '{query}': {e}")
+                last_error = e
+
+        if not all_papers and last_error:
+            raise RuntimeError(f"arXiv search failed: {last_error}")
 
         logger.info(f"Found {len(all_papers)} unique papers across {len(queries)} queries")
         return all_papers
 
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential(min=4, max=30))
     def _search_sync(self, query: str, max_results: int) -> List[Dict[str, Any]]:
         """Synchronous arXiv search (runs in thread pool)."""
         search = arxiv.Search(

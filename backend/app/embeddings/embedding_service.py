@@ -58,14 +58,14 @@ class EmbeddingService:
             raise
 
     async def embed_batch(
-        self, texts: List[str], batch_size: int = 100, max_concurrency: int = 5
+        self, texts: List[str], batch_size: int = 100, max_concurrency: int = 1
     ) -> List[Optional[List[float]]]:
-        """Embed a list of texts concurrently in batches to improve speed."""
+        """Embed a list of texts sequentially in batches to respect API rate limits."""
         embeddings = [None] * len(texts)
-        sem = asyncio.Semaphore(max_concurrency)
 
-        async def _process_batch(start_idx: int, batch: List[str]):
-            async with sem:
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i : i + batch_size]
+            for attempt in range(6):
                 try:
                     result = await self.client.aio.models.embed_content(
                         model=self.model,
@@ -75,33 +75,22 @@ class EmbeddingService:
                             output_dimensionality=self.dimension
                         )
                     )
-                    
                     for j, emb in enumerate(result.embeddings):
-                        embeddings[start_idx + j] = emb.values
-                        
+                        embeddings[i + j] = emb.values
+                    
+                    # Sleep to respect 15 RPM limit (~4s per request)
+                    if i + batch_size < len(texts):
+                        await asyncio.sleep(4.1)
+                    break  # Success, move to next batch
                 except Exception as e:
-                    logger.error(f"Batch embedding error: {e}")
                     if "429" in str(e) or "exhausted" in str(e).lower() or "quota" in str(e).lower():
-                        logger.warning("Rate limit hit during embedding. Backing off for 10s...")
-                        await asyncio.sleep(10)
-                        try:
-                            result = await self.client.aio.models.embed_content(
-                                model=self.model,
-                                contents=batch,
-                                config=types.EmbedContentConfig(
-                                    task_type="RETRIEVAL_DOCUMENT",
-                                    output_dimensionality=self.dimension
-                                )
-                            )
-                            for j, emb in enumerate(result.embeddings):
-                                embeddings[start_idx + j] = emb.values
-                        except Exception as retry_err:
-                            logger.error(f"Retry batch embedding failed: {retry_err}")
+                        wait_time = 10 + (5 * attempt)
+                        logger.warning(f"Rate limit hit during embedding. Backing off for {wait_time}s...")
+                        await asyncio.sleep(wait_time)
+                    else:
+                        logger.error(f"Batch embedding error: {e}")
+                        break
+            else:
+                logger.error(f"Batch embedding failed after multiple attempts.")
 
-        tasks = [
-            _process_batch(i, texts[i : i + batch_size])
-            for i in range(0, len(texts), batch_size)
-        ]
-        await asyncio.gather(*tasks)
-                
         return embeddings

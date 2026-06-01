@@ -69,6 +69,7 @@ export function OmnixLogo({ size = 150, className = "", style = {}, loading = fa
           r="45"
           fill="url(#aura-glow)"
           filter="url(#soft-blur)"
+          initial={{ opacity: 0.5, scale: 1 }}
           animate={{
             scale: loading ? [1.1, 1.3, 1.1] : (isHovered ? [1.25, 1.35, 1.25] : [0.95, 1.05, 0.95]),
             opacity: loading ? [0.6, 0.9, 0.6] : (isHovered ? 1 : 0.5),
@@ -94,6 +95,7 @@ export function OmnixLogo({ size = 150, className = "", style = {}, loading = fa
           cy="50"
           r="32"
           fill="url(#well-depth)"
+          initial={{ opacity: 0.7, scale: 1 }}
           animate={{
             scale: loading ? [0.9, 1.1, 0.9] : (isHovered ? 1.05 : [1.05, 0.95, 1.05]),
             opacity: loading ? [0.7, 0.9, 0.7] : (isHovered ? 0.9 : 0.7),
@@ -126,6 +128,7 @@ export function OmnixLogo({ size = 150, className = "", style = {}, loading = fa
             strokeWidth={loading ? 3 : 1.5}
             strokeDasharray={loading ? "80 120" : "40 80"}
             strokeLinecap="round"
+            initial={{ r: 40, strokeWidth: 1.5 }}
             animate={{
               r: loading ? 40 : (isHovered ? [40, 41.5, 38.5, 40] : 40),
               strokeWidth: loading ? 3 : (isHovered ? 2.5 : 1.5),
@@ -155,6 +158,7 @@ export function OmnixLogo({ size = 150, className = "", style = {}, loading = fa
             strokeWidth={loading ? 3 : 2}
             strokeDasharray={loading ? "40 60" : "20 40"}
             strokeLinecap="round"
+            initial={{ r: 25 }}
             animate={{
               r: loading ? 25 : (isHovered ? [25, 26, 24, 25] : 25),
             }}
@@ -168,6 +172,7 @@ export function OmnixLogo({ size = 150, className = "", style = {}, loading = fa
         <motion.path
           d="M 50 28 L 62 50 L 50 72 L 38 50 Z"
           fill="url(#crystal-facets)"
+          initial={{ opacity: 0.8, scale: 1 }}
           animate={
             loading
               ? {
@@ -206,6 +211,7 @@ export function OmnixLogo({ size = 150, className = "", style = {}, loading = fa
           r="4"
           fill="#ffffff"
           filter="url(#soft-blur)"
+          initial={{ opacity: 0.8, scale: 1 }}
           animate={{
             scale: isHovered ? [1, 2, 1] : 1,
             opacity: isHovered ? [0.5, 1, 0.5] : 0.8

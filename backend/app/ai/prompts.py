@@ -16,6 +16,7 @@ Guidelines:
 - Include recent breakthrough directions
 - Use scientific terminology that appears in paper titles/abstracts
 - Make each query distinct and specific
+- CRITICAL: Use ONLY 2-4 keywords per query. NEVER use natural language questions or long sentences. arXiv search will fail if you include too many words. Example: instead of "how to improve solar efficiency", use "perovskite solar cell efficiency".
 
 Return ONLY a JSON array of strings, no explanation:
 ["query1", "query2", ...]

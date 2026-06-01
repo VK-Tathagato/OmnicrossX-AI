@@ -318,6 +318,8 @@ h1, h2, h3, h4, h5 {
               0 20px 60px rgba(0, 0, 0, 0.4),
               inset 0 1px 0 rgba(255, 255, 255, 0.04);
   transition: border-color 0.3s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
 }
 
 .search-box:focus-within {
@@ -342,14 +344,17 @@ h1, h2, h3, h4, h5 {
 .search-textarea {
   width: 100%;
   background: transparent;
-  padding: 1.3rem 1.5rem 4.5rem 3.5rem;
+  padding: 1.5rem;
   color: white;
   font-family: var(--font-sans);
-  font-size: 0.975rem;
+  font-size: 1.05rem;
   line-height: 1.6;
   resize: none;
   border: none;
   outline: none;
+  min-height: 120px;
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 .search-textarea::placeholder {
@@ -358,28 +363,24 @@ h1, h2, h3, h4, h5 {
 
 .search-animated-placeholder {
   position: absolute;
-  left: 3.5rem;
-  top: 1.35rem;
+  left: 1.5rem;
+  top: 1.55rem;
   pointer-events: none;
   color: rgba(255, 255, 255, 0.28);
-  font-size: 0.975rem;
+  font-size: 1.05rem;
   line-height: 1.6;
-  max-width: calc(100% - 10rem);
+  max-width: calc(100% - 3rem);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .search-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 0.75rem 1.25rem;
+  padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .search-hint {
