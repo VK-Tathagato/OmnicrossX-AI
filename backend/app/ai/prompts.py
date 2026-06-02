@@ -39,35 +39,36 @@ CRITICAL RULES:
 4. Be honest about limitations and unknowns — do not fabricate data
 5. Each solution must be meaningfully different from others
 6. Assign realistic scores (0.0 to 1.0) based on evidence strength
-7. MUST return valid, strictly formatted JSON array at the end, enclosed in a ```json ... ``` markdown block.
 
-Before outputting the JSON array, you MUST write a brief `<scratchpad>` where you analyze the problem, synthesize evidence, and brainstorm combinations.
-After your `<scratchpad>`, return a valid JSON array in EXACTLY this format:
-[
-  {{
-    "title": "Brief descriptive solution title",
-    "summary": "2-3 sentence executive summary",
-    "full_content": {{
-      "idea": "Detailed explanation of the proposed solution approach",
-      "why_it_works": "Scientific reasoning for why this should work, with citations [1], [2]",
-      "advantages": ["advantage 1", "advantage 2", "advantage 3"],
-      "limitations": ["limitation 1", "limitation 2"],
-      "feasibility_analysis": "Detailed TRL/readiness analysis with evidence",
-      "implementation_ideas": ["step 1", "step 2", "step 3"],
-      "possible_risks": ["risk 1", "risk 2"],
-      "cost_efficiency": "Cost analysis: materials, scaling, manufacturing considerations",
-      "cross_domain_inspirations": ["inspiration from field X", "analogy to Y"]
-    }},
-    "feasibility_score": 0.75,
-    "cost_score": 0.60,
-    "innovation_score": 0.85,
-    "confidence_level": 0.70,
-    "tags": ["tag1", "tag2", "tag3"],
-    "domains": ["Materials Science", "Electrochemistry"],
-    "is_speculative": false,
-    "source_excerpt_indices": [1, 3, 5]
-  }}
-]
+Return a valid JSON object in EXACTLY this format:
+{{
+  "scratchpad": "Analyze the problem, synthesize evidence, and brainstorm combinations here before listing solutions.",
+  "solutions": [
+    {{
+      "title": "Brief descriptive solution title",
+      "summary": "2-3 sentence executive summary",
+      "full_content": {{
+        "idea": "Detailed explanation of the proposed solution approach",
+        "why_it_works": "Scientific reasoning for why this should work, with citations [1], [2]",
+        "advantages": ["advantage 1", "advantage 2", "advantage 3"],
+        "limitations": ["limitation 1", "limitation 2"],
+        "feasibility_analysis": "Detailed TRL/readiness analysis with evidence",
+        "implementation_ideas": ["step 1", "step 2", "step 3"],
+        "possible_risks": ["risk 1", "risk 2"],
+        "cost_efficiency": "Cost analysis: materials, scaling, manufacturing considerations",
+        "cross_domain_inspirations": ["inspiration from field X", "analogy to Y"]
+      }},
+      "feasibility_score": 0.75,
+      "cost_score": 0.60,
+      "innovation_score": 0.85,
+      "confidence_level": 0.70,
+      "tags": ["tag1", "tag2", "tag3"],
+      "domains": ["Materials Science", "Electrochemistry"],
+      "is_speculative": false,
+      "source_excerpt_indices": [1, 3, 5]
+    }}
+  ]
+}}
 
 Generate the {num_solutions} solutions now:"""
 

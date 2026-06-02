@@ -37,7 +37,7 @@ Strict behavioral rules you MUST follow at all times:
 
 
 class GeminiClient:
-    def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: str, model: str = "gemini-3.5-flash"):
         self.client = genai.Client(api_key=api_key)
         self.model_name = model
 
@@ -54,6 +54,7 @@ class GeminiClient:
                 system_instruction=SYSTEM_INSTRUCTION,
                 temperature=0.5,
                 max_output_tokens=1024,
+                response_mime_type="application/json",
             ),
         )
         raw = response.text.strip()
@@ -89,6 +90,7 @@ class GeminiClient:
                 temperature=0.7,
                 top_p=0.95,
                 max_output_tokens=8192,
+                response_mime_type="application/json",
             ),
         )
         raw = response.text.strip()
@@ -163,24 +165,37 @@ class GeminiClient:
         try:
             logger.info(f"Raw solution text: {text[:500]}")
             
-            # Remove scratchpad if present
+            # Remove scratchpad if present (legacy)
             scratchpad_end = text.find('</scratchpad>')
             if scratchpad_end != -1:
                 text = text[scratchpad_end + 13:]
 
+            parsed = None
             # Look for JSON block
             match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
             if match:
-                return json.loads(match.group(1))
+                parsed = json.loads(match.group(1))
+            else:
+                # Try finding the outermost array or object
+                start_obj = text.find('{')
+                end_obj = text.rfind('}')
+                start_arr = text.find('[')
+                end_arr = text.rfind(']')
+                
+                if start_obj != -1 and end_obj != -1 and (start_arr == -1 or start_obj < start_arr):
+                    parsed = json.loads(text[start_obj:end_obj+1])
+                elif start_arr != -1 and end_arr != -1 and end_arr > start_arr:
+                    parsed = json.loads(text[start_arr:end_arr+1])
+                else:
+                    parsed = json.loads(text)
             
-            # Try finding the outermost array brackets
-            start_idx = text.find('[')
-            end_idx = text.rfind(']')
-            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-                return json.loads(text[start_idx:end_idx+1])
-            
-            # Try parsing the whole text
-            return json.loads(text)
+            if isinstance(parsed, dict) and "solutions" in parsed:
+                return parsed["solutions"]
+            elif isinstance(parsed, list):
+                return parsed
+            else:
+                logger.error("Parsed JSON does not contain a list of solutions.")
+                return []
         except Exception as e:
             logger.error(f"Failed to parse solutions JSON: {e}\nRaw output: {text[:200]}...")
         return []
