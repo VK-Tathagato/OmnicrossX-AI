@@ -21,8 +21,21 @@ async def run_research_pipeline(session_id: str, user_query: str, pipeline, arxi
     except Exception as e:
         logger.error(f"Pipeline failed for session {session_id}: {e}", exc_info=True)
         try:
+            error_msg = str(e)
+            try:
+                import tenacity
+                if isinstance(e, tenacity.RetryError) and e.last_attempt and e.last_attempt.exception():
+                    error_msg = str(e.last_attempt.exception())
+            except Exception:
+                pass
+
+            if "429" in error_msg or "quota" in error_msg.lower() or "RESOURCE_EXHAUSTED" in error_msg:
+                user_msg = "Error: Gemini API Quota Exceeded. Please check your plan and billing details."
+            else:
+                user_msg = f"Error: {error_msg[:150]}"
+
             await pipeline.supabase.table("research_sessions").update(
-                {"status": "failed", "current_step": f"Error: {str(e)[:200]}"}
+                {"status": "failed", "current_step": user_msg}
             ).eq("id", session_id).execute()
         except Exception as db_err:
             logger.error(f"Failed to update session status to failed: {db_err}")
@@ -102,9 +115,22 @@ async def run_additional_solutions(
     except Exception as e:
         logger.error(f"Additional solution generation failed: {e}")
         try:
+            error_msg = str(e)
+            try:
+                import tenacity
+                if isinstance(e, tenacity.RetryError) and e.last_attempt and e.last_attempt.exception():
+                    error_msg = str(e.last_attempt.exception())
+            except Exception:
+                pass
+
+            if "429" in error_msg or "quota" in error_msg.lower() or "RESOURCE_EXHAUSTED" in error_msg:
+                user_msg = "Generation failed: Gemini API Quota Exceeded."
+            else:
+                user_msg = f"Generation failed: {error_msg[:100]}"
+
             await supabase.table("research_sessions").update({
                 "status": "complete", # Restore to complete so user isn't stuck loading
-                "current_step": f"Generation failed: {str(e)[:100]}"
+                "current_step": user_msg
             }).eq("id", session_id).execute()
         except Exception:
             pass
