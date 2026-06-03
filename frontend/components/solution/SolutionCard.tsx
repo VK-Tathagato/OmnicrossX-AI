@@ -52,7 +52,7 @@ export default function SolutionCardComponent({ solution, sessionId, index, onDe
           )}
           <div className="text-right mt-1">
             <div className="text-3xl font-black gradient-text" style={{ fontFamily: "Space Grotesk, sans-serif", lineHeight: 1 }}>
-              {solution.confidence_level}%
+              {Math.round(solution.confidence_level * 100)}%
             </div>
             <div className="text-[10px] text-white/40 font-medium tracking-wide uppercase mt-1">Confidence</div>
           </div>
