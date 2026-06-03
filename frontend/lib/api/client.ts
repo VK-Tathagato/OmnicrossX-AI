@@ -4,8 +4,13 @@ async function apiRequest<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  // Append cache buster to GET requests to prevent Vercel Edge / Browser caching
+  const isGet = !options.method || options.method.toUpperCase() === "GET";
+  const urlPath = isGet ? (path.includes("?") ? `${path}&_t=${Date.now()}` : `${path}?_t=${Date.now()}`) : path;
+  
+  const res = await fetch(`${API_URL}${urlPath}`, {
     headers: { "Content-Type": "application/json", ...options.headers },
+    cache: "no-store",
     ...options,
   });
 

@@ -18,7 +18,7 @@ class ArxivService:
         self.client = arxiv.Client(
             page_size=10,
             delay_seconds=3.0,
-            num_retries=5,
+            num_retries=2, # Reduced from 5 to prevent massive hangs
         )
 
     async def search_papers(
@@ -32,18 +32,22 @@ class ArxivService:
         all_papers: List[Dict[str, Any]] = []
         last_error = None
 
-        for query in queries:
-            try:
-                papers = await asyncio.to_thread(
-                    self._search_sync, query, max_per_query
-                )
-                for p in papers:
+        # Run queries concurrently instead of sequentially to speed up
+        async def fetch_query(query):
+            return await asyncio.to_thread(self._search_sync, query, max_per_query)
+            
+        tasks = [fetch_query(q) for q in queries]
+        results_list = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for query, result in zip(queries, results_list):
+            if isinstance(result, Exception):
+                logger.error(f"arXiv search error for query '{query}': {result}")
+                last_error = result
+            else:
+                for p in result:
                     if p["arxiv_id"] not in seen_ids and len(all_papers) < max_total:
                         seen_ids.add(p["arxiv_id"])
                         all_papers.append(p)
-            except Exception as e:
-                logger.error(f"arXiv search error for query '{query}': {e}")
-                last_error = e
 
         if not all_papers and last_error:
             raise RuntimeError(f"arXiv search failed: {last_error}")
@@ -51,7 +55,6 @@ class ArxivService:
         logger.info(f"Found {len(all_papers)} unique papers across {len(queries)} queries")
         return all_papers
 
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential(min=4, max=30))
     def _search_sync(self, query: str, max_results: int) -> List[Dict[str, Any]]:
         """Synchronous arXiv search (runs in thread pool)."""
         search = arxiv.Search(
@@ -60,8 +63,13 @@ class ArxivService:
             sort_by=arxiv.SortCriterion.Relevance,
         )
         results = []
-        for r in self.client.results(search):
-            results.append(self._paper_to_dict(r))
+        try:
+            for r in self.client.results(search):
+                results.append(self._paper_to_dict(r))
+        except Exception as e:
+            # arxiv package raises unexpected exceptions if 403
+            logger.error(f"arxiv.Client error: {e}")
+            raise e
         return results
 
     def _paper_to_dict(self, result: arxiv.Result) -> Dict[str, Any]:
