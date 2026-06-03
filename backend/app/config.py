@@ -21,11 +21,11 @@ class Settings(BaseSettings):
     allowed_origins: str = "http://localhost:3000"
 
     # Research Pipeline
-    max_papers_per_query: int = 8
-    max_total_papers: int = 30
+    max_papers_per_query: int = 15   # OpenAlex handles this easily (no rate limits)
+    max_total_papers: int = 40
     chunk_size: int = 500
     chunk_overlap: int = 50
-    top_k_chunks: int = 25
+    top_k_chunks: int = 30
     max_solutions: int = 3
 
     # Rate Limiting

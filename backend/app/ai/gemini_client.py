@@ -43,7 +43,7 @@ class GeminiClient:
 
     @retry(stop=stop_after_attempt(5), wait=wait_exponential(min=4, max=60))
     async def expand_query(self, user_query: str) -> List[str]:
-        """Expand a user problem into 2 focused arXiv search queries."""
+        """Expand a user problem into 3 focused arXiv search queries."""
         from app.ai.prompts import QUERY_EXPANSION_PROMPT
         prompt = QUERY_EXPANSION_PROMPT.format(query=user_query)
 
@@ -63,7 +63,7 @@ class GeminiClient:
             # Fallback: use original query
             queries = [user_query]
         logger.info(f"Expanded query into {len(queries)} search terms")
-        return queries[:2]
+        return queries[:3]
 
     @retry(stop=stop_after_attempt(5), wait=wait_exponential(min=4, max=60))
     async def generate_solutions(

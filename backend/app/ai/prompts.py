@@ -3,23 +3,24 @@ Prompts — All Gemini prompt templates for OmniX AI.
 """
 
 # ─── Query Expansion ──────────────────────────────────────────────────────────
-QUERY_EXPANSION_PROMPT = """You are a scientific research assistant helping expand a user's problem into targeted arXiv search queries.
+QUERY_EXPANSION_PROMPT = """You are a scientific research assistant helping expand a user's problem into targeted search queries.
 
 USER PROBLEM: {query}
 
-Your task: Generate exactly 2 specific, complementary arXiv search queries that will find the most relevant research papers.
+Your task: Generate exactly 3 specific, complementary search queries that will find the most relevant research papers.
 
 Guidelines:
-- Query 1: Cover the core technical domain directly
-- Query 2: Cover an alternative approach or related sub-field
+- Query 1: Cover the core technical problem directly
+- Query 2: Cover an alternative approach or closely related sub-field
+- Query 3: Cover a cross-disciplinary or application-specific angle
 - Use scientific terminology that appears in paper titles/abstracts
-- CRITICAL: Use ONLY 2-4 keywords per query. NEVER use natural language questions, long sentences, or punctuation. arXiv search breaks with too many words or special characters.
+- CRITICAL: Use ONLY 2-4 keywords per query. NEVER use natural language questions, long sentences, or punctuation. Queries break with too many words or special characters.
   - GOOD: "perovskite solar cell efficiency"
   - BAD: "how can we improve perovskite solar cell efficiency?", or "perovskite solar", (with trailing comma/quote)
 - Return clean keywords only — no quotes, commas, or other punctuation INSIDE or AROUND the strings
 
-Return ONLY a JSON array of exactly 2 strings, no explanation:
-["query1", "query2"]
+Return ONLY a JSON array of exactly 3 strings, no explanation:
+["query1", "query2", "query3"]
 """
 
 # ─── Solution Generation ──────────────────────────────────────────────────────

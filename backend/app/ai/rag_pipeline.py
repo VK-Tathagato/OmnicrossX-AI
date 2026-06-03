@@ -166,8 +166,24 @@ class RAGPipeline:
         )
 
         if not relevant_chunks:
-            await self._update_session(session_id, {"status": "failed", "current_step": "Failed to extract text from papers"})
-            raise RuntimeError("No relevant text chunks could be extracted from the papers.")
+            # Fallback: if vector search found nothing (e.g. embedding mismatch),
+            # use the raw chunks directly sorted by chunk index
+            logger.warning(
+                "Vector similarity search returned 0 results. "
+                "Falling back to using all extracted chunks directly."
+            )
+            if all_chunks:
+                relevant_chunks = sorted(all_chunks, key=lambda c: c.get("chunk_index", 0))[:self.settings.top_k_chunks]
+            else:
+                await self._update_session(session_id, {
+                    "status": "failed",
+                    "current_step": "Failed to extract text from papers"
+                })
+                raise RuntimeError(
+                    "No text could be extracted from any of the papers found. "
+                    "This can happen if all papers are behind paywalls and have no accessible PDFs. "
+                    "Try a different query that returns more arXiv preprints."
+                )
 
         # Enrich chunks with paper metadata
         relevant_chunks = await self._enrich_chunks(relevant_chunks, papers_meta)
@@ -217,50 +233,99 @@ class RAGPipeline:
     async def _process_paper(
         self, paper_meta: Dict, paper_id: Optional[str], tmpdir: str
     ) -> List[Dict[str, Any]]:
-        """Download, parse, and chunk a single paper."""
+        """Download, parse, and chunk a single paper.
+        
+        Falls back to synthetic text built from title + abstract + metadata
+        if no PDF is available. This ensures every paper produces at least
+        one usable chunk for the RAG pipeline.
+        """
         arxiv_id = paper_meta["arxiv_id"]
-        pdf_url = paper_meta.get("pdf_url")  # May be OA URL for non-arXiv papers
+        pdf_url = paper_meta.get("pdf_url")
+        title = paper_meta.get("title", "")
+        abstract = paper_meta.get("abstract", "")
+        authors = paper_meta.get("authors", [])
+        categories = paper_meta.get("categories", [])
+
+        def _build_synthetic_text() -> str:
+            """Build a rich text block from metadata for papers without PDFs.
+            
+            Concatenates all available structured info so the TextChunker
+            gets enough words to produce multiple overlapping chunks.
+            """
+            parts = []
+            if title:
+                # Repeat title 3x — it anchors semantic search to this paper
+                parts.append(f"Title: {title}")
+                parts.append(f"Paper: {title}")
+                parts.append(f"Study: {title}")
+            if authors:
+                parts.append(f"Authors: {', '.join(authors[:5])}")
+            if categories:
+                parts.append(f"Fields: {', '.join(categories)}")
+            if abstract:
+                # Repeat abstract 3x to give chunker enough words to create
+                # multiple overlapping chunks (abstracts ~150-300 words,
+                # chunk_size=500, so 3 repeats = ~450-900 words = 1-2 chunks)
+                parts.append(f"Abstract: {abstract}")
+                parts.append(f"Summary: {abstract}")
+                parts.append(f"Content: {abstract}")
+            return "\n\n".join(parts)
+
         try:
-            # Download PDF — pass pdf_url so non-arXiv OA papers can be fetched
+            # ── Try PDF download first ────────────────────────────────────────
             pdf_path = await self.arxiv.download_pdf(arxiv_id, tmpdir, pdf_url=pdf_url)
-            if not pdf_path:
-                # No PDF available — fall back to using the abstract as text
-                abstract = paper_meta.get("abstract", "")
-                if abstract and len(abstract) > 100:
-                    logger.info(f"No PDF for {arxiv_id}, using abstract text only.")
+
+            if pdf_path:
+                extracted = await self.parser.parse_async(pdf_path)
+                full_text = extracted.get("full_text", "")
+
+                if full_text and len(full_text) >= 200:
+                    # Update DB with extracted text
+                    if paper_id:
+                        await self.supabase.table("papers").update({
+                            "extracted_text": full_text[:50000],
+                        }).eq("id", paper_id).execute()
+
                     chunks = self.chunker.chunk_text(
-                        text=abstract,
+                        text=full_text,
                         paper_id=paper_id or arxiv_id,
                         arxiv_id=arxiv_id,
-                        title=paper_meta["title"],
+                        title=title,
                     )
-                    return chunks
-                return []
+                    if chunks:
+                        logger.info(f"PDF chunked: {arxiv_id} → {len(chunks)} chunks")
+                        return chunks
 
-            # Parse PDF
-            extracted = await self.parser.parse_async(pdf_path)
-            full_text = extracted["full_text"]
+            # ── PDF unavailable or empty — use synthetic text ─────────────────
+            synthetic = _build_synthetic_text()
+            if len(synthetic) > 50:
+                logger.info(
+                    f"No usable PDF for {arxiv_id}, "
+                    f"using synthetic text ({len(synthetic)} chars)"
+                )
+                chunks = self.chunker.chunk_text(
+                    text=synthetic,
+                    paper_id=paper_id or arxiv_id,
+                    arxiv_id=arxiv_id,
+                    title=title,
+                )
+                logger.info(f"Synthetic text chunked: {arxiv_id} → {len(chunks)} chunks")
+                return chunks
 
-            if not full_text or len(full_text) < 200:
-                return []
-
-            # Update paper record with extracted text
-            if paper_id:
-                await self.supabase.table("papers").update({
-                    "extracted_text": full_text[:50000],  # Cap for storage
-                }).eq("id", paper_id).execute()
-
-            # Chunk
-            chunks = self.chunker.chunk_text(
-                text=full_text,
-                paper_id=paper_id or arxiv_id,
-                arxiv_id=arxiv_id,
-                title=paper_meta["title"],
-            )
-            return chunks
+            return []
 
         except Exception as e:
             logger.error(f"Failed to process paper {arxiv_id}: {e}")
+            # Last-resort: return abstract chunk directly so the paper still contributes
+            if abstract and len(abstract) > 50:
+                return [{
+                    "paper_id": paper_id or arxiv_id,
+                    "arxiv_id": arxiv_id,
+                    "title": title,
+                    "chunk_index": 0,
+                    "chunk_text": f"{title}\n\n{abstract}",
+                    "metadata": {"word_count": len(abstract.split()), "char_count": len(abstract)},
+                }]
             return []
 
     async def _store_papers(

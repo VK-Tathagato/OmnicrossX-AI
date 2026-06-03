@@ -55,14 +55,19 @@ export default function ResearchPage() {
         setStatus(s); // Wait until solutions are fetched before showing the complete screen
       } else if (s.status === "failed") {
         setPollingActive(false);
-        const isRateLimit = s.current_step && (s.current_step.toLowerCase().includes("rate limit") || s.current_step.toLowerCase().includes("exhausted") || s.current_step.toLowerCase().includes("quota"));
-        const errorMsg = s.current_step && s.current_step.includes("No papers found")
+        // Clean URL from error string to prevent UI overflow
+        const rawStep = s.current_step || "An unexpected error occurred.";
+        const cleanStep = rawStep.replace(/https?:\/\/[^\s)]+/g, '').replace(/\(\s*\)/g, '').trim();
+
+        const isRateLimit = cleanStep.toLowerCase().includes("rate limit") || cleanStep.toLowerCase().includes("exhausted") || cleanStep.toLowerCase().includes("quota");
+        const errorMsg = cleanStep.includes("No papers found")
           ? "No relevant papers found for this query. Try a different topic or rephrasing." 
           : isRateLimit 
             ? "Pipeline failed: You may have run out of API tokens for the day. Please try again tomorrow." 
-            : s.current_step && s.current_step.startsWith("Error:") 
-              ? `Pipeline failed: ${s.current_step.replace('Error: ', '')}` 
-              : `Pipeline failed: ${s.current_step || "An unexpected error occurred."}`;
+            : cleanStep.startsWith("Error:") 
+              ? `Pipeline failed: ${cleanStep.replace('Error: ', '')}` 
+              : `Pipeline failed: ${cleanStep}`;
+        
         setError(errorMsg);
         toast.error(errorMsg, { duration: 6000 });
         setStatus(s);
@@ -219,11 +224,18 @@ export default function ResearchPage() {
               }}
             >
               <AlertCircle color="#f87171" size={20} style={{ flexShrink: 0, marginTop: "2px" }} />
-              <div>
+              <div style={{ width: "100%", overflow: "hidden" }}>
                 <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 600, color: "#f87171", marginBottom: "0.25rem" }}>
                   Research Failed
                 </h3>
-                <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.5)" }}>{error}</p>
+                <p style={{ 
+                  fontSize: "0.875rem", 
+                  color: "rgba(255,255,255,0.5)",
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere"
+                }}>
+                  {error}
+                </p>
                 <button
                   onClick={() => router.push("/")}
                   style={{
@@ -322,7 +334,7 @@ export default function ResearchPage() {
             {/* ── Step cards grid ── */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
               gap: "0.875rem",
               marginBottom: "3rem",
             }}>
@@ -429,7 +441,7 @@ export default function ResearchPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
                 style={{
-                  display: "flex", justifyContent: "center", gap: "1px",
+                  display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1px",
                   background: "rgba(255,255,255,0.04)", borderRadius: "16px",
                   overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)",
                 }}
@@ -442,10 +454,10 @@ export default function ResearchPage() {
                   <div
                     key={stat.label}
                     style={{
-                      flex: 1, textAlign: "center",
+                      flex: "1 1 120px", textAlign: "center",
                       padding: "1.4rem 1rem",
                       background: "rgba(13,15,26,0.6)",
-                      borderRight: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                      borderRight: "1px solid rgba(255,255,255,0.04)",
                     }}
                   >
                     <div style={{ fontSize: "1.1rem", marginBottom: "0.4rem" }}>{stat.icon}</div>
@@ -600,11 +612,11 @@ export default function ResearchPage() {
                   {papers.map((paper, i) => (
                     <a
                       key={paper.id || i}
-                      href={`https://arxiv.org/abs/${paper.arxiv_id}`}
+                      href={paper.entry_url || (paper.arxiv_id?.startsWith("doi_") ? `https://doi.org/${paper.arxiv_id.replace("doi_", "")}` : `https://arxiv.org/abs/${paper.arxiv_id}`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        display: "flex", alignItems: "flex-start", gap: "1rem",
+                        display: "flex", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap",
                         padding: "1.25rem", background: "rgba(13,15,26,0.6)",
                         border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px",
                         textDecoration: "none", transition: "all 0.2s",
@@ -619,15 +631,16 @@ export default function ResearchPage() {
                         e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
                       }}
                     >
-                      <div style={{ flex: 1 }}>
+                      <div style={{ flex: "1 1 200px", minWidth: 0 }}>
                         <h4 style={{ 
                           fontSize: "1rem", fontWeight: 600, color: "rgba(255,255,255,0.95)",
-                          marginBottom: "0.4rem", lineHeight: 1.4
+                          marginBottom: "0.4rem", lineHeight: 1.4,
+                          wordBreak: "break-word"
                         }}>
                           {paper.title}
                         </h4>
-                        <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)" }}>
-                          {paper.authors.join(", ")} · arXiv:{paper.arxiv_id}
+                        <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)", wordBreak: "break-word" }}>
+                          {paper.authors?.join(", ")} · {paper.arxiv_id?.startsWith("doi_") || paper.arxiv_id?.startsWith("oa_") ? "External ID: " : "arXiv:"}{paper.arxiv_id}
                         </div>
                       </div>
                       <div style={{
@@ -635,7 +648,7 @@ export default function ResearchPage() {
                         background: "rgba(255,255,255,0.04)", fontSize: "0.75rem",
                         color: "rgba(255,255,255,0.6)", flexShrink: 0
                       }}>
-                        View on arXiv
+                        View Paper
                       </div>
                     </a>
                   ))}
