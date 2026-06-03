@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # Google Gemini
     gemini_api_key: str
     embedding_model: str = "models/gemini-embedding-2"
-    generation_model: str = "gemini-1.5-flash"
+    generation_model: str = "gemini-3.5-flash"
     embedding_dimension: int = 768
 
     # App

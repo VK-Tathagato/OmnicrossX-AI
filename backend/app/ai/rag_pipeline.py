@@ -219,10 +219,22 @@ class RAGPipeline:
     ) -> List[Dict[str, Any]]:
         """Download, parse, and chunk a single paper."""
         arxiv_id = paper_meta["arxiv_id"]
+        pdf_url = paper_meta.get("pdf_url")  # May be OA URL for non-arXiv papers
         try:
-            # Download PDF
-            pdf_path = await self.arxiv.download_pdf(arxiv_id, tmpdir)
+            # Download PDF — pass pdf_url so non-arXiv OA papers can be fetched
+            pdf_path = await self.arxiv.download_pdf(arxiv_id, tmpdir, pdf_url=pdf_url)
             if not pdf_path:
+                # No PDF available — fall back to using the abstract as text
+                abstract = paper_meta.get("abstract", "")
+                if abstract and len(abstract) > 100:
+                    logger.info(f"No PDF for {arxiv_id}, using abstract text only.")
+                    chunks = self.chunker.chunk_text(
+                        text=abstract,
+                        paper_id=paper_id or arxiv_id,
+                        arxiv_id=arxiv_id,
+                        title=paper_meta["title"],
+                    )
+                    return chunks
                 return []
 
             # Parse PDF

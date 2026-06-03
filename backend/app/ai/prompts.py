@@ -7,19 +7,19 @@ QUERY_EXPANSION_PROMPT = """You are a scientific research assistant helping expa
 
 USER PROBLEM: {query}
 
-Your task: Generate 6-8 specific, diverse arXiv search queries that will find the most relevant research papers.
+Your task: Generate exactly 2 specific, complementary arXiv search queries that will find the most relevant research papers.
 
 Guidelines:
-- Cover the core technical domain
-- Include alternative material/chemical/biological approaches
-- Add cross-disciplinary angles (e.g., biomimicry, nanotechnology, computational approaches)
-- Include recent breakthrough directions
+- Query 1: Cover the core technical domain directly
+- Query 2: Cover an alternative approach or related sub-field
 - Use scientific terminology that appears in paper titles/abstracts
-- Make each query distinct and specific
-- CRITICAL: Use ONLY 2-4 keywords per query. NEVER use natural language questions or long sentences. arXiv search will fail if you include too many words. Example: instead of "how to improve solar efficiency", use "perovskite solar cell efficiency".
+- CRITICAL: Use ONLY 2-4 keywords per query. NEVER use natural language questions, long sentences, or punctuation. arXiv search breaks with too many words or special characters.
+  - GOOD: "perovskite solar cell efficiency"
+  - BAD: "how can we improve perovskite solar cell efficiency?", or "perovskite solar", (with trailing comma/quote)
+- Return clean keywords only — no quotes, commas, or other punctuation INSIDE or AROUND the strings
 
-Return ONLY a JSON array of strings, no explanation:
-["query1", "query2", ...]
+Return ONLY a JSON array of exactly 2 strings, no explanation:
+["query1", "query2"]
 """
 
 # ─── Solution Generation ──────────────────────────────────────────────────────
