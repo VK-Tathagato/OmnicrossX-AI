@@ -92,6 +92,15 @@ def create_app() -> FastAPI:
             "environment": settings.environment,
         }
 
+    # ── Root ──────────────────────────────────────────────────────────────────
+    @app.get("/")
+    async def root():
+        return {
+            "message": "Welcome to OmniX AI Backend",
+            "status": "online",
+            "docs": "/docs" if settings.debug else "disabled",
+        }
+
     return app
 
 
