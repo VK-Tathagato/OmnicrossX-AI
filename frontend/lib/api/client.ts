@@ -132,6 +132,7 @@ export interface Paper {
   published_date: string;
   categories: string[];
   pdf_url: string;
+  entry_url?: string;
   is_processed: boolean;
 }
 
