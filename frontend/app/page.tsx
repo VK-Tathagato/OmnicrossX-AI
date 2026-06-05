@@ -100,7 +100,15 @@ export default function HomePage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historySessions, setHistorySessions] = useState<ResearchSession[]>([]);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 480);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -247,26 +255,136 @@ export default function HomePage() {
 
         {/* ── Navbar */}
         <header style={{ position: "relative", zIndex: 50 }}>
-          <nav className="navbar" style={{ justifyContent: "flex-end" }}>
-            <motion.a
-              href="/"
-              className="nav-logo"
-              style={{
-                textDecoration: "none", display: "flex", alignItems: "center", gap: "0.7rem",
-                position: "absolute", left: "50%"
-              }}
-              initial={{ x: "-50%" }}
-              animate={{ x: "-50%" }}
-              whileHover={{ scale: 1.02, x: "-50%" }}
-              whileTap={{ scale: 0.98, x: "-50%" }}
-            >
-              <OmnixLogo size={36} />
-              <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.15rem", letterSpacing: "-0.025em", color: "var(--foreground)" }}>
-                OmnicrossX <span className="gradient-text">AI</span>
-              </span>
-            </motion.a>
+          <nav className="navbar">
+            <div className="nav-logo-wrapper">
+              <motion.a
+                href="/"
+                className="nav-logo"
+                style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.7rem" }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <OmnixLogo size={36} />
+                <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.15rem", letterSpacing: "-0.025em", color: "var(--foreground)" }}>
+                  OmnicrossX <span className="gradient-text">AI</span>
+                </span>
+              </motion.a>
+            </div>
 
             <div className="nav-actions" style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <div className="desktop-history-wrapper" style={{ position: "relative" }} ref={dropdownRef}>
+                <button
+                  onClick={toggleHistory}
+                  style={{
+                    background: isHistoryOpen ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.04)",
+                    border: isHistoryOpen ? "1px solid rgba(239,68,68,0.35)" : "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "10px",
+                    padding: "0.48rem 0.85rem",
+                    color: isHistoryOpen ? "#fca5a5" : "rgba(255,255,255,0.6)",
+                    cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: "0.45rem",
+                    transition: "all 0.2s",
+                    fontFamily: "inherit", fontSize: "0.875rem", fontWeight: 500,
+                  }}
+                >
+                  <Clock size={15} />
+                  <span>History</span>
+                </button>
+
+                <AnimatePresence>
+                  {isHistoryOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      className="history-dropdown-desktop"
+                      style={{
+                        position: "absolute", top: "calc(100% + 0.6rem)", right: 0,
+                        width: "340px",
+                        background: "rgba(8,8,18,0.97)",
+                        backdropFilter: "blur(20px)",
+                        border: "1px solid rgba(239,68,68,0.18)",
+                        borderRadius: "16px",
+                        boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(239,68,68,0.05)",
+                        padding: "1rem",
+                        zIndex: 100, maxHeight: "420px", overflowY: "auto",
+                        display: "flex", flexDirection: "column", gap: "0.5rem",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", paddingBottom: "0.6rem", borderBottom: "1px solid rgba(239,68,68,0.1)", marginBottom: "0.1rem" }}>
+                        <Clock size={13} style={{ color: "#fca5a5" }} />
+                        <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#fca5a5", letterSpacing: "0.06em", textTransform: "uppercase" }}>Recent Sessions</span>
+                      </div>
+
+                      {!userId ? (
+                        <div style={{ padding: "1.25rem 0", textAlign: "center", color: "rgba(255,255,255,0.38)", fontSize: "0.875rem" }}>Sign in to view your research history.</div>
+                      ) : historyLoading ? (
+                        <div style={{ padding: "1.25rem 0", textAlign: "center", color: "rgba(255,255,255,0.38)", fontSize: "0.875rem" }}>Loading sessions…</div>
+                      ) : historySessions.length === 0 ? (
+                        <div style={{ padding: "1.25rem 0", textAlign: "center", color: "rgba(255,255,255,0.38)", fontSize: "0.875rem" }}>No sessions yet — start your first research!</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                          {historySessions.map((session) => (
+                            <div
+                              key={session.id}
+                              onClick={() => router.push(`/research/${session.id}`)}
+                              style={{
+                                padding: "0.7rem 0.85rem",
+                                background: "rgba(239,68,68,0.03)",
+                                borderRadius: "10px", cursor: "pointer",
+                                border: "1px solid rgba(239,68,68,0.08)",
+                                transition: "all 0.2s",
+                                display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem",
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.07)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.2)"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.03)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.08)"; }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: "0.825rem", color: "rgba(255,255,255,0.88)", marginBottom: "0.3rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 500 }}>
+                                  {session.query}
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.72rem", color: "rgba(255,255,255,0.35)" }}>
+                                  <span>{new Date(session.created_at).toLocaleDateString()}</span>
+                                  <span style={{
+                                    background: session.status === "complete" ? "rgba(34,197,94,0.12)" : session.status === "failed" ? "rgba(239,68,68,0.12)" : "rgba(234,179,8,0.12)",
+                                    color: session.status === "complete" ? "#4ade80" : session.status === "failed" ? "#f87171" : "#facc15",
+                                    padding: "0.1rem 0.45rem", borderRadius: "5px", fontWeight: 500,
+                                    border: `1px solid ${session.status === "complete" ? "rgba(34,197,94,0.25)" : session.status === "failed" ? "rgba(239,68,68,0.25)" : "rgba(234,179,8,0.25)"}`,
+                                  }}>
+                                    {session.status}
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => handleDeleteHistorySession(e, session.id)}
+                                disabled={deletingSessionId === session.id}
+                                style={{
+                                  background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)",
+                                  color: "#ef4444", borderRadius: "8px", padding: "0.35rem",
+                                  cursor: "pointer", transition: "all 0.2s",
+                                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                                }}
+                                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(239,68,68,0.2)"; }}
+                                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(239,68,68,0.08)"; }}
+                                title="Delete session"
+                              >
+                                {deletingSessionId === session.id ? (
+                                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
+                                    <OmnixLogo size={14} loading={true} />
+                                  </motion.div>
+                                ) : (
+                                  <Trash2 size={13} />
+                                )}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {!userId && (
                 <>
@@ -616,101 +734,105 @@ export default function HomePage() {
       </div>
 
       {/* Mobile History Bottom Sheet */}
-      <AnimatePresence>
-        {isHistoryOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={toggleHistory}
-              style={{
-                position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 150,
-                backdropFilter: "blur(4px)"
-              }}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              style={{
-                position: "fixed", bottom: "64px", left: 0, right: 0,
-                background: "rgba(8,8,18,0.97)",
-                backdropFilter: "blur(20px)",
-                borderTop: "1px solid rgba(239,68,68,0.18)",
-                borderTopLeftRadius: "24px", borderTopRightRadius: "24px",
-                padding: "1.5rem", paddingBottom: "2rem", zIndex: 150,
-                maxHeight: "75vh", display: "flex", flexDirection: "column"
-              }}
-            >
-              <div style={{ width: "40px", height: "4px", background: "rgba(255,255,255,0.2)", borderRadius: "2px", margin: "0 auto 1rem" }} />
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", paddingBottom: "1rem", borderBottom: "1px solid rgba(239,68,68,0.1)", marginBottom: "0.5rem" }}>
-                <Clock size={16} style={{ color: "#fca5a5" }} />
-                <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fca5a5", letterSpacing: "0.06em", textTransform: "uppercase" }}>Recent Sessions</span>
-              </div>
-              <div style={{ overflowY: "auto", flex: 1 }}>
-                {!userId ? (
-                  <div style={{ padding: "2rem 0", textAlign: "center", color: "rgba(255,255,255,0.38)" }}>Sign in to view your research history.</div>
-                ) : historyLoading ? (
-                  <div style={{ padding: "2rem 0", textAlign: "center", color: "rgba(255,255,255,0.38)" }}>Loading sessions…</div>
-                ) : historySessions.length === 0 ? (
-                  <div style={{ padding: "2rem 0", textAlign: "center", color: "rgba(255,255,255,0.38)" }}>No sessions yet — start your first research!</div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    {historySessions.map((session) => (
-                      <div
-                        key={session.id}
-                        onClick={() => router.push(`/research/${session.id}`)}
-                        style={{
-                          padding: "1rem",
-                          background: "rgba(239,68,68,0.03)",
-                          borderRadius: "12px", cursor: "pointer",
-                          border: "1px solid rgba(239,68,68,0.08)",
-                          display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.75rem",
-                        }}
-                      >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.88)", marginBottom: "0.4rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 500 }}>
-                            {session.query}
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.35)" }}>
-                            <span>{new Date(session.created_at).toLocaleDateString()}</span>
-                            <span style={{
-                              background: session.status === "complete" ? "rgba(34,197,94,0.12)" : session.status === "failed" ? "rgba(239,68,68,0.12)" : "rgba(234,179,8,0.12)",
-                              color: session.status === "complete" ? "#4ade80" : session.status === "failed" ? "#f87171" : "#facc15",
-                              padding: "0.15rem 0.5rem", borderRadius: "6px", fontWeight: 500,
-                            }}>
-                              {session.status}
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={(e) => handleDeleteHistorySession(e, session.id)}
-                          disabled={deletingSessionId === session.id}
+      <div className="mobile-history-sheet">
+        {isMobile && (
+          <AnimatePresence>
+          {isHistoryOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={toggleHistory}
+                style={{
+                  position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 150,
+                  backdropFilter: "blur(4px)"
+                }}
+              />
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                style={{
+                  position: "fixed", bottom: "64px", left: 0, right: 0,
+                  background: "rgba(8,8,18,0.97)",
+                  backdropFilter: "blur(20px)",
+                  borderTop: "1px solid rgba(239,68,68,0.18)",
+                  borderTopLeftRadius: "24px", borderTopRightRadius: "24px",
+                  padding: "1.5rem", paddingBottom: "2rem", zIndex: 150,
+                  maxHeight: "75vh", display: "flex", flexDirection: "column"
+                }}
+              >
+                <div style={{ width: "40px", height: "4px", background: "rgba(255,255,255,0.2)", borderRadius: "2px", margin: "0 auto 1rem" }} />
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", paddingBottom: "1rem", borderBottom: "1px solid rgba(239,68,68,0.1)", marginBottom: "0.5rem" }}>
+                  <Clock size={16} style={{ color: "#fca5a5" }} />
+                  <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fca5a5", letterSpacing: "0.06em", textTransform: "uppercase" }}>Recent Sessions</span>
+                </div>
+                <div style={{ overflowY: "auto", flex: 1 }}>
+                  {!userId ? (
+                    <div style={{ padding: "2rem 0", textAlign: "center", color: "rgba(255,255,255,0.38)" }}>Sign in to view your research history.</div>
+                  ) : historyLoading ? (
+                    <div style={{ padding: "2rem 0", textAlign: "center", color: "rgba(255,255,255,0.38)" }}>Loading sessions…</div>
+                  ) : historySessions.length === 0 ? (
+                    <div style={{ padding: "2rem 0", textAlign: "center", color: "rgba(255,255,255,0.38)" }}>No sessions yet — start your first research!</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      {historySessions.map((session) => (
+                        <div
+                          key={session.id}
+                          onClick={() => router.push(`/research/${session.id}`)}
                           style={{
-                            background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)",
-                            color: "#ef4444", borderRadius: "8px", padding: "0.5rem",
-                            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                            padding: "1rem",
+                            background: "rgba(239,68,68,0.03)",
+                            borderRadius: "12px", cursor: "pointer",
+                            border: "1px solid rgba(239,68,68,0.08)",
+                            display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.75rem",
                           }}
                         >
-                          {deletingSessionId === session.id ? (
-                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
-                              <OmnixLogo size={16} loading={true} />
-                            </motion.div>
-                          ) : (
-                            <Trash2 size={16} />
-                          )}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.88)", marginBottom: "0.4rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 500 }}>
+                              {session.query}
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem", color: "rgba(255,255,255,0.35)" }}>
+                              <span>{new Date(session.created_at).toLocaleDateString()}</span>
+                              <span style={{
+                                background: session.status === "complete" ? "rgba(34,197,94,0.12)" : session.status === "failed" ? "rgba(239,68,68,0.12)" : "rgba(234,179,8,0.12)",
+                                color: session.status === "complete" ? "#4ade80" : session.status === "failed" ? "#f87171" : "#facc15",
+                                padding: "0.15rem 0.5rem", borderRadius: "6px", fontWeight: 500,
+                              }}>
+                                {session.status}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => handleDeleteHistorySession(e, session.id)}
+                            disabled={deletingSessionId === session.id}
+                            style={{
+                              background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)",
+                              color: "#ef4444", borderRadius: "8px", padding: "0.5rem",
+                              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                            }}
+                          >
+                            {deletingSessionId === session.id ? (
+                              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
+                                <OmnixLogo size={16} loading={true} />
+                              </motion.div>
+                            ) : (
+                              <Trash2 size={16} />
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+          </AnimatePresence>
         )}
-      </AnimatePresence>
+      </div>
 
       {/* Mobile Bottom Nav */}
       <nav className="mobile-bottom-nav" aria-label="Mobile navigation">

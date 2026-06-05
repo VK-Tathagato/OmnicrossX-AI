@@ -1307,3 +1307,25 @@ h1, h2, h3, h4, h5 {
   }
 }
 
+
+/* --- Desktop / Mobile Responsive History & Logo Adjustments -------------- */
+.mobile-history-sheet {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .desktop-history-wrapper {
+    display: none !important;
+  }
+  .mobile-history-sheet {
+    display: block;
+  }
+  .nav-logo-wrapper {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .navbar {
+    justify-content: flex-end;
+  }
+}
