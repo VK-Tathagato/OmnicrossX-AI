@@ -104,7 +104,7 @@ export default function HomePage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 480);
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -256,7 +256,7 @@ export default function HomePage() {
         {/* ── Navbar */}
         <header style={{ position: "relative", zIndex: 50 }}>
           <nav className="navbar">
-            <div className="nav-logo-wrapper">
+            <div className="nav-logo-wrapper" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <motion.a
                 href="/"
                 className="nav-logo"

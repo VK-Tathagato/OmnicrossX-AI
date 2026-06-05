@@ -159,11 +159,9 @@ export default function ResearchPage() {
         backdropFilter: "blur(20px)",
         background: "rgba(4,5,10,0.7)",
       }}>
-        <nav style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "1rem 2rem", maxWidth: "1200px", margin: "0 auto",
-        }}>
+        <nav className="research-nav">
           <button
+            className="research-back-btn"
             onClick={() => router.push("/")}
             style={{
               display: "flex", alignItems: "center", gap: "0.5rem",
@@ -185,7 +183,7 @@ export default function ResearchPage() {
 
           <motion.a 
             href="/" 
-            className="group" 
+            className="research-nav-logo group" 
             style={{ display: "flex", alignItems: "center", gap: "1rem", textDecoration: "none" }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -196,12 +194,12 @@ export default function ResearchPage() {
             </span>
           </motion.a>
 
-          <div style={{ width: "80px" }} />
+          <div className="research-nav-spacer" style={{ width: "80px" }} />
         </nav>
       </header>
 
       {/* ── Main Content ── */}
-      <div style={{ position: "relative", zIndex: 10, maxWidth: "860px", margin: "0 auto", padding: "4rem 1.5rem 6rem" }}>
+      <div className="research-main-content" style={{ position: "relative", zIndex: 10, maxWidth: "860px", margin: "0 auto", padding: "4rem 1.5rem 6rem" }}>
 
         {initialLoad ? (
           <div className="flex flex-col items-center justify-center min-h-[50vh]">
@@ -332,7 +330,7 @@ export default function ResearchPage() {
             </div>
 
             {/* ── Step cards grid ── */}
-            <div style={{
+            <div className="research-steps-mobile-grid" style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
               gap: "0.875rem",
@@ -445,6 +443,7 @@ export default function ResearchPage() {
                   background: "rgba(255,255,255,0.04)", borderRadius: "16px",
                   overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)",
                 }}
+                className="research-stats-strip"
               >
                 {[
                   { label: "Papers Found",   value: status.papers_found,          icon: "📄" },
@@ -615,6 +614,7 @@ export default function ResearchPage() {
                       href={paper.entry_url || (paper.arxiv_id?.startsWith("doi_") ? `https://doi.org/${paper.arxiv_id.replace("doi_", "")}` : `https://arxiv.org/abs/${paper.arxiv_id}`)}
                       target="_blank"
                       rel="noopener noreferrer"
+                      className="research-paper-link"
                       style={{
                         display: "flex", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap",
                         padding: "1.25rem", background: "rgba(13,15,26,0.6)",

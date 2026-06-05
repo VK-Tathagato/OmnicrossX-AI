@@ -1313,7 +1313,7 @@ h1, h2, h3, h4, h5 {
   display: none;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .desktop-history-wrapper {
     display: none !important;
   }
@@ -1323,9 +1323,128 @@ h1, h2, h3, h4, h5 {
   .nav-logo-wrapper {
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
+    top: 50%;
+    margin-top: 16px;
+    transform: translate(-50%, -50%) scale(1.15);
   }
   .navbar {
     justify-content: flex-end;
+  }
+  .mobile-bottom-nav {
+    display: flex;
+  }
+}
+
+/* ─── Research Page Mobile Styles ────────────────────────────────────────── */
+.research-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  /* Center logo, hide back button and spacer */
+  .research-nav {
+    position: relative;
+    padding: 0.85rem 1.1rem;
+    justify-content: center;
+  }
+
+  .research-back-btn {
+    display: none !important;
+  }
+
+  .research-nav-spacer {
+    display: none !important;
+  }
+
+  .research-nav-logo {
+    margin-top: 16px;
+    transform: scale(1.15);
+  }
+
+  /* Main content padding for mobile */
+  .research-nav ~ * {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+
+/* --- Research Solution Cards - Mobile ------------------------------------- */
+@media (max-width: 768px) {
+  /* Make main content full-width with proper mobile padding */
+  .page-wrapper [style*='maxWidth: "860px"'],
+  .page-wrapper [style*='max-width: 860px'] {
+    padding: 1.5rem 0.9rem 5rem !important;
+  }
+
+  /* Solution card mobile tweaks */
+  .glass-card {
+    border-radius: 18px !important;
+    padding: 1.2rem !important;
+  }
+
+  /* Step cards ? 2-col on phone */
+  .research-steps-mobile-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+  }
+
+  /* Papers list - make links stack nicely */
+  .research-paper-link {
+    flex-direction: column !important;
+    gap: 0.6rem !important;
+    padding: 1rem !important;
+    border-radius: 14px !important;
+  }
+
+  .research-paper-link .paper-view-btn {
+    align-self: flex-start;
+  }
+
+  /* Generate more chat box */
+  .research-generate-box {
+    border-radius: 16px !important;
+  }
+
+  /* Stats strip - uniform sizing on small screens */
+  .research-stats-strip > div {
+    padding: 1rem 0.5rem !important;
+    min-width: 0;
+  }
+
+  .research-stats-strip > div > div:nth-child(2) {
+    font-size: 1.3rem !important;
+  }
+}
+
+/* --- Research Page Main Content - Mobile ---------------------------------- */
+@media (max-width: 768px) {
+  .research-main-content {
+    padding: 1.5rem 1rem 6rem !important;
+  }
+
+  /* Step cards: 2 col compact grid */
+  .research-steps-mobile-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+  }
+
+  /* Stats strip: smaller padding */
+  .research-stats-strip {
+    border-radius: 14px !important;
+  }
+
+  /* Paper links: stacked layout */
+  .research-paper-link {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    padding: 1rem !important;
+    border-radius: 14px !important;
   }
 }
